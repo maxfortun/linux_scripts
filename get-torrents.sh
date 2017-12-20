@@ -6,10 +6,26 @@ if [ -z "$*" ]; then
 fi
 
 wanIp=$(dig +short myip.opendns.com @resolver1.opendns.com)
+if [ -z "$wanIp" ]; then
+	echo "Failed to identify wan ip."
+	exit
+fi
+
 echo "Your ip is $wanIp"
-sleep 1
+
+if [ -f ~/.hideIps ]; then
+	if grep $wanIp ~/.hideIps; then
+		echo "$wanIp is not hidden. Not proceeding."
+		exit
+	fi
+else
+	sleep 1
+fi
+
 for file in $*; do
 	while read link; do 
 		transmission-cli -f ~/bin/transmission-f.sh "$link"
+		rc="$?"
+		echo "exit code: $rc"
 	done < $file
 done
