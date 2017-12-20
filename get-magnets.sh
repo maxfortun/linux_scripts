@@ -18,6 +18,11 @@ while read name seq; do
 	if grep $name$seq $file.mags; then
 		continue
 	fi
-	curl "https://www.thepiratebay.org/search/$$name$seq/0/99/200" | grep -m1 -o 'magnet:[^"]*' >> $file.mags
+	echo "https://www.thepiratebay.org/search/$name$seq/0/99/200" 
+	magnet=$(curl "https://www.thepiratebay.org/search/$name$seq/0/99/200" | grep -m1 -o 'magnet:[^"]*')
+	if [ -n "$magnet" ]; then
+		echo "$magnet"
+		echo "$magnet" >> $file.mags
+	fi
 
 done < $file
