@@ -1,7 +1,7 @@
 #!/bin/bash
 file=${1}
 
-while read name seq; do
+while read name seq suffix; do
 	if [[ "$seq" =~ ^S([0-9]{2})E([0-9]{2}) ]]; then
 		S=${BASH_REMATCH[1]}
 		E=${BASH_REMATCH[2]}
@@ -18,11 +18,15 @@ while read name seq; do
 	if grep $name$seq $file.mags; then
 		continue
 	fi
-	echo "https://www.thepiratebay.org/search/$name$seq/0/99/200" 
-	magnet=$(curl "https://www.thepiratebay.org/search/$name$seq/0/99/200" | grep -m1 -o 'magnet:[^"]*')
+	url="https://www.thepiratebay.org/search/$name%20$seq%20$suffix/0/99/200" 
+	echo "$url"
+	magnet=$(curl "$url" | grep -m1 -o 'magnet:[^"]*')
 	if [ -n "$magnet" ]; then
 		echo "$magnet"
 		echo "$magnet" >> $file.mags
 	fi
 
 done < $file
+
+cat $file.mags
+
