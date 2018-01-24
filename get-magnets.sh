@@ -26,7 +26,13 @@ while read name seq suffix; do
 		echo "$magnet" >> $file.mags
 	fi
 
+	echo "$name $seq $suffix" >> $file.new
+
 done < $file
+
+mv $file $file.bak
+mv $file.new $file
+diff $file.bak $file
 
 cat $file.mags
 
