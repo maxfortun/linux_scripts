@@ -1,2 +1,3 @@
 #!/bin/bash
-killall transmission-cli
+
+kill $PPID
