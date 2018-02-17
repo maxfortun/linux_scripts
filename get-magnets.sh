@@ -1,6 +1,8 @@
 #!/bin/bash
 file=${1}
 
+rm $file.new
+results="$HOME/tmp/$(basename $0).out"
 while read name seq suffix; do
 	checkSeq=true
 	while [ "$checkSeq" = "true" ]; do
@@ -25,7 +27,13 @@ while read name seq suffix; do
 		echo "Looking for $name $seq $suffix."
 		url="https://www.thepiratebay.org/search/$name%20$seq%20$suffix/0/99/200" 
 		#echo "$url"
-		magnet=$(curl -s"$url" | grep -m1 -o 'magnet:[^"]*')
+		curl -s -o "$results" "$url" 
+
+		if grep -q recaptcha "$results"; then
+			echo "reCAPTCHA encountered for $results"
+			exit
+		fi
+		magnet=$(cat "$results" | grep -m1 -o 'magnet:[^"]*')
 		if [ -n "$magnet" ]; then
 			echo "$magnet"
 			echo "$magnet" >> $file.mags
@@ -46,3 +54,4 @@ diff $file.bak $file
 
 cat $file.mags
 
+[ -f "$results" ] && rm "$results"
