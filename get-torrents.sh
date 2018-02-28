@@ -23,6 +23,7 @@ else
 fi
 
 for file in $*; do
+	rm $file.done
 	while read link; do 
 		transmission-cli -f ~/bin/transmission-f.sh "$link"
 		rc="$?"
