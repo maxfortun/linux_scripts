@@ -29,4 +29,6 @@ for file in $*; do
 		rc="$?"
 		echo "exit code: $rc"
 	done < $file
+	diff --unchanged-line-format= --old-line-format='%L' --new-line-format= $file $file.done > $file.left
+	mv $file.left $file
 done

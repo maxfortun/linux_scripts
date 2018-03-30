@@ -1,7 +1,7 @@
 #!/bin/bash
 file=${1}
 
-rm $file.new
+[ -f $file.new ] && rm $file.new
 results="$HOME/tmp/$(basename $0).out"
 while read name seq suffix; do
 	checkSeq=true
@@ -41,10 +41,10 @@ while read name seq suffix; do
 			seq=$nextSeq
 		else
 			echo "$name $seq $suffix not found."
+			echo "$name $seq $suffix" >> $file.new
 			checkSeq=false
 		fi
 
-		echo "$name $seq $suffix" >> $file.new
 	done
 done < $file
 
