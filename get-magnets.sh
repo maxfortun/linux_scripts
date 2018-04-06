@@ -66,7 +66,9 @@ while read prefix startSeq suffix; do
 				magnet=$(cat "$results" | grep -m1 -o 'magnet:[^"]*')
 				if [ -z "$magnet" ]; then
 					echo "No magnet in results. Looking for a link."
-					grep -m1 "$prefix.*$seq.*$suffix" "$results"
+					link=$(grep -P -o -m1 -i "href=['\"][^'\"]*?$prefix.*?$seq.*?$suffix[^'\"]*?['\"]" "$results")
+					echo $link
+					
 					# if link found set url
 				fi
 			done
