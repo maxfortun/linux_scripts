@@ -1,6 +1,18 @@
 #!/bin/bash
 file=${1}
 
+declare -a sitePrefix
+declare -a siteSuffix
+
+[ -f setenv.sh ] && . setenv.sh
+
+if [ ${#sitePrefix[@]} = 0 ]; then
+	echo "setenv.sh must set at least one sitePrefix." 
+	echo "e.g. sitePrefix[0]='https://www.thepiratebay.org/search/'"
+	echo "e.g. siteSuffix[0]='/0/99/200'"
+	exit
+fi
+
 [ -f $file.new ] && rm $file.new
 results="$HOME/tmp/$(basename $0).out"
 while read prefix startSeq suffix; do
@@ -26,15 +38,40 @@ while read prefix startSeq suffix; do
 		fi
 
 		echo "Looking for $prefix $seq $suffix."
-		url="https://www.thepiratebay.org/search/$prefix%20$seq%20$suffix/0/99/200" 
-		#echo "$url"
-		curl -s -f -S -o "$results" "$url" || { echo "Error($?) $url: $?" ; exit; }
+		for siteId in ${!sitePrefix[@]}; do
+			if [ "${siteEnable[$siteId]}" = "false" ]; then
+				continue
+			fi
 
-		if grep -q recaptcha "$results"; then
-			echo "reCAPTCHA encountered for $results"
-			exit
-		fi
-		magnet=$(cat "$results" | grep -m1 -o 'magnet:[^"]*')
+			url="${sitePrefix[$siteId]}$prefix%20$seq%20$suffix${siteSuffix[$siteId]}"
+			rc=0
+			while [ -n "$url" ]; do
+				echo "$url"
+				curl -s -f -S -o "$results" "$url"
+				rc=$?
+				lastUrl="$url"
+				unset url
+				if [ "$rc" != "0" ]; then
+					echo "Disabling site #$siteId: Error($rc): $lastUrl" 
+					siteEnable[$siteId]=false
+					continue 2
+				fi
+	
+				if grep -q recaptcha "$results"; then
+					echo "reCAPTCHA encountered for $results"
+					continue
+				fi
+
+				# no need for cat
+				magnet=$(cat "$results" | grep -m1 -o 'magnet:[^"]*')
+				if [ -z "$magnet" ]; then
+					echo "No magnet in results. Looking for a link."
+					grep -m1 "$prefix.*$seq.*$suffix" "$results"
+					# if link found set url
+				fi
+			done
+		done
+		
 		if [ -n "$magnet" ]; then
 			echo "$magnet"
 			echo "$magnet" >> $file.mags
