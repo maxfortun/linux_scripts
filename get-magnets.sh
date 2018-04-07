@@ -8,8 +8,10 @@ declare -a siteSuffix
 
 if [ ${#sitePrefix[@]} = 0 ]; then
 	echo "setenv.sh must set at least one sitePrefix." 
-	echo "e.g. sitePrefix[0]='https://www.thepiratebay.org/search/'"
-	echo "e.g. siteSuffix[0]='/0/99/200'"
+	echo "e.g. sitePrefix[0]='https://host:port/search/'"
+	echo "e.g. siteSuffix[0]='/more/params'"
+	echo "e.g. siteEnable[0]=true"
+	echo "e.g. siteMagPrefix[0]=/magnets/"
 	exit
 fi
 
@@ -31,6 +33,7 @@ while read prefix startSeq suffix; do
 		E=${E:$L}
 		nextSeq=S${S}E${E}
 
+		echo "Checking if already exists $prefix $seq $suffix."
 		if grep "$prefix.*$seq.*$suffix" $file.mags; then
 			echo "$prefix $seq $suffix exists. Next seq is $nextSeq."
 			seq=$nextSeq
@@ -44,13 +47,16 @@ while read prefix startSeq suffix; do
 			fi
 
 			url="${sitePrefix[$siteId]}$prefix%20$seq%20$suffix${siteSuffix[$siteId]}"
+			urlDepth=0
 			rc=0
-			while [ -n "$url" ]; do
-				echo "$url"
+			while [ -n "$url" ] && [ "$urlDepth" -lt "2" ] ; do
+				echo "Calling $url"
 				curl -s -f -S -o "$results" "$url"
 				rc=$?
 				lastUrl="$url"
 				unset url
+				urlDepth=$(( urlDepth + 1 ))
+				
 				if [ "$rc" != "0" ]; then
 					echo "Disabling site #$siteId: Error($rc): $lastUrl" 
 					siteEnable[$siteId]=false
@@ -63,19 +69,23 @@ while read prefix startSeq suffix; do
 				fi
 
 				# no need for cat
-				magnet=$(cat "$results" | grep -m1 -o 'magnet:[^"]*')
+				magnet=$(grep -m1 -o 'magnet:[^"]*' "$results")
 				if [ -z "$magnet" ]; then
 					echo "No magnet in results. Looking for a link."
-					link=$(grep -P -o -m1 -i "href=['\"][^'\"]*?$prefix.*?$seq.*?$suffix[^'\"]*?['\"]" "$results")
-					echo $link
-					
-					# if link found set url
+					url=$(grep -P -o -m1 -i "href=['\"][^'\"]*?${siteMagPrefix[$siteId]}[^'\"]*?$prefix.*?$seq.*?$suffix[^'\"]*?['\"]" "$results" | tr "\"" "'" | cut -d"'" -f2 )
+					# if link relative get base from url and append the link
+					if [[ "$url" =~ ^/ ]]; then
+						baseUrl=$(echo "$lastUrl" | cut -d/ -f1-3)
+						url="$baseUrl$url"
+					fi
+
 				fi
 			done
+			[ -n "$magnet" ] && break
 		done
-		
+
 		if [ -n "$magnet" ]; then
-			echo "$magnet"
+			#echo "$magnet"
 			echo "$magnet" >> $file.mags
 			echo "$prefix $seq $suffix found. Next seq is $nextSeq."
 			seq=$nextSeq
