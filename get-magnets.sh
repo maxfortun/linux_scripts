@@ -40,16 +40,18 @@ while read prefix startSeq suffix; do
 			continue
 		fi
 
+		sitesEnabled=${#sitePrefix[@]}
 		echo "Looking for $prefix $seq $suffix."
 		for siteId in ${!sitePrefix[@]}; do
 			if [ "${siteEnable[$siteId]}" = "false" ]; then
+				sitesEnabled=$(( sitesEnabled - 1 ))
 				continue
 			fi
 
 			url="${sitePrefix[$siteId]}$prefix%20$seq%20$suffix${siteSuffix[$siteId]}"
 			urlDepth=0
 			rc=0
-			while [ -n "$url" ] && [ "$urlDepth" -lt "2" ] ; do
+			while [ -n "$url" ] && [ "$urlDepth" -lt "${siteUrlDepth[$siteId]}" ] ; do
 				echo "Calling $url"
 				curl -s -f -S -o "$results" "$url"
 				rc=$?
@@ -60,11 +62,17 @@ while read prefix startSeq suffix; do
 				if [ "$rc" != "0" ]; then
 					echo "Disabling site #$siteId: Error($rc): $lastUrl" 
 					siteEnable[$siteId]=false
+					sitesEnabled=$(( sitesEnabled - 1 ))
+					if [ "$sitesEnabled" -lt "1" ]; then
+						echo "All sites offline."
+						exit
+					fi
 					continue 2
 				fi
 	
 				if grep -q recaptcha "$results"; then
 					echo "reCAPTCHA encountered for $results"
+					checkSeq=false
 					continue
 				fi
 
@@ -78,7 +86,6 @@ while read prefix startSeq suffix; do
 						baseUrl=$(echo "$lastUrl" | cut -d/ -f1-3)
 						url="$baseUrl$url"
 					fi
-
 				fi
 			done
 			[ -n "$magnet" ] && break
