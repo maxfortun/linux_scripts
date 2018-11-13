@@ -84,7 +84,7 @@ while read prefix startSeq suffix; do
 				magnet=$(grep -m1 -o 'magnet:[^"]*' "$results")
 				if [ -z "$magnet" ]; then
 					echo "No magnet in results. Looking for a link."
-					url=$(grep -P -o -m1 -i "href=['\"][^'\"]*?${siteMagPrefix[$siteId]}[^'\"]*?$prefix.*?$seq.*?$suffix[^'\"]*?['\"]" "$results" | tr "\"" "'" | cut -d"'" -f2 )
+					url=$(grep -P -o -m1 -i "href=['\"][^'\"]*?${siteMagPrefix[$siteId]}.*?$prefix.*?$seq.*?$suffix[^'\"]*?['\"]" "$results" | sed "s/href=['\"]\([^'\"]*\)['\"].*\$/\1/g" | tr "\"" "'" | cut -d"'" -f2 )
 					# if link relative get base from url and append the link
 					if [[ "$url" =~ ^/ ]]; then
 						baseUrl=$(echo "$lastUrl" | cut -d/ -f1-3)
