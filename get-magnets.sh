@@ -17,6 +17,7 @@ fi
 
 [ -f $file.new ] && rm $file.new
 results="$HOME/tmp/$(basename $0).out"
+cookies="$HOME/tmp/$(basename $0).cookies"
 while read prefix startSeq suffix; do
 	seq=$startSeq
 	checkSeq=true
@@ -52,8 +53,8 @@ while read prefix startSeq suffix; do
 			urlDepth=0
 			rc=0
 			while [ -n "$url" ] && [ "$urlDepth" -lt "${siteUrlDepth[$siteId]}" ] ; do
-				echo "Calling $url"
-				curl -s -f -S -o "$results" "$url"
+				echo curl -s -f -S -b "$cookies" -c "$cookies" -o "$results" "$url"
+				curl -s -f -S -b "$cookies" -c "$cookies" -o "$results" "$url"
 				rc=$?
 				lastUrl="$url"
 				unset url
@@ -61,7 +62,10 @@ while read prefix startSeq suffix; do
 				
 				if [ "$rc" != "0" ]; then
 					echo "Disabling site #$siteId: Error($rc): $lastUrl" 
-					siteEnable[$siteId]=false
+					siteMaxErrs[$siteId]=$(( ${siteMaxErrs[$siteId]} - 1  ))
+					if [ "${siteMaxErrs[$siteId]}" -lt 1 ]; then
+						siteEnable[$siteId]=false
+					fi
 					sitesEnabled=$(( sitesEnabled - 1 ))
 					if [ "$sitesEnabled" -lt "1" ]; then
 						echo "All sites offline."
