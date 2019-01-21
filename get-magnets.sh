@@ -124,3 +124,4 @@ diff $file.bak $file
 cat $file.mags
 
 [ -f "$results" ] && rm "$results"
+[ -f "$cookies" ] && rm "$cookies"
