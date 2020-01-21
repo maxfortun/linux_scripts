@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 file=${1}
 
 declare -a sitePrefix
@@ -19,6 +19,10 @@ fi
 results="$HOME/tmp/$(basename $0).out"
 cookies="$HOME/tmp/$(basename $0).cookies"
 while read prefix startSeq suffix; do
+	if [ -z "$prefix" ]; then
+		echo "Skip empty line"
+		continue
+	fi
 	seq=$startSeq
 	checkSeq=true
 	while [ "$checkSeq" = "true" ]; do
@@ -103,7 +107,7 @@ while read prefix startSeq suffix; do
 		elif [[ "$startSeq" =~ ^S$S ]]; then
 			echo "$prefix $seq $suffix not found."
 			lastSeq=$seq
-			S=0$(( S + 1 ))
+			S=0$(( ${S##0} + 1 ))
 			L=${#S}
 			L=$(( L - 2 ))
 			S=${S:$L}
