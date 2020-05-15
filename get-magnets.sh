@@ -85,7 +85,7 @@ while read prefix startSeq suffix; do
 				fi
 
 				# no need for cat
-				magnet=$(grep -m1 -o "magnet:.*$prefix.*$seq.*$suffix" "$results")
+				magnet=$(grep -m1 -io "magnet:[^\"']*$prefix[^\"']*$seq[^\"']*$suffix" "$results")
 				if [ -z "$magnet" ]; then
 					echo "No magnet in results. Looking for a link."
 					url=$(grep -P -o -m1 -i "href=['\"][^'\"]*?${siteMagPrefix[$siteId]}.*?$prefix.*?$seq.*?$suffix[^'\"]*?['\"]" "$results" | sed "s/href=['\"]\([^'\"]*\)['\"].*\$/\1/g" | tr "\"" "'" | cut -d"'" -f2 )
